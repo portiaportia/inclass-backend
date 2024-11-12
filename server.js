@@ -86,6 +86,45 @@ app.get("/api/house_plans", (req, res) => {
   res.json(housePlans);
 });
 
+app.post("/api/house_plans", upload.single("img"), (req, res)=>{
+  console.log("In a post request");
+
+  const result = validateHouse(req.body);
+
+  if(result.error){
+    res.status(400).send(result.error.details[0].message);
+    console.log("I have an error");
+    return;
+  }
+
+  const house = {
+    name:req.body.name,
+    size:req.body.size,
+    bedrooms:req.body.bedrooms,
+    bathrooms:req.body.bathrooms
+  }
+
+  if(req.file){
+    house.main_image = req.file.filename;
+  }
+
+  housePlans.push(house);
+
+  console.log(house);
+  res.status(200).send(house);
+});
+
+const validateHouse = (house)=>{
+  const schema = Joi.object({
+    name:Joi.string().min(3).required(),
+    size:Joi.number().required(),
+    bedrooms:Joi.number().required(),
+    bathrooms:Joi.number().required()
+  });
+
+  return schema.validate(house);
+};
+
 app.listen(3001, () => {
   console.log("Listening....");
 });
