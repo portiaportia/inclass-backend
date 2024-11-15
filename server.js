@@ -19,6 +19,7 @@ const upload = multer({ storage: storage });
 
 const housePlans = [
   {
+    _id: 1,
     name: "Farmhouse",
     size: 2000,
     bedrooms: 3,
@@ -37,6 +38,7 @@ const housePlans = [
     ],
   },
   {
+    _id: 2,
     name: "Mountain House",
     size: 1700,
     bedrooms: 3,
@@ -59,6 +61,7 @@ const housePlans = [
     ],
   },
   {
+    _id: 3,
     name: "Lake House",
     size: 3000,
     bedrooms: 4,
@@ -86,25 +89,26 @@ app.get("/api/house_plans", (req, res) => {
   res.json(housePlans);
 });
 
-app.post("/api/house_plans", upload.single("img"), (req, res)=>{
+app.post("/api/house_plans", upload.single("img"), (req, res) => {
   console.log("In a post request");
 
   const result = validateHouse(req.body);
 
-  if(result.error){
+  if (result.error) {
     res.status(400).send(result.error.details[0].message);
     console.log("I have an error");
     return;
   }
 
   const house = {
-    name:req.body.name,
-    size:req.body.size,
-    bedrooms:req.body.bedrooms,
-    bathrooms:req.body.bathrooms
-  }
+    _id: housePlans.length + 1,
+    name: req.body.name,
+    size: req.body.size,
+    bedrooms: req.body.bedrooms,
+    bathrooms: req.body.bathrooms,
+  };
 
-  if(req.file){
+  if (req.file) {
     house.main_image = req.file.filename;
   }
 
@@ -114,12 +118,49 @@ app.post("/api/house_plans", upload.single("img"), (req, res)=>{
   res.status(200).send(house);
 });
 
-const validateHouse = (house)=>{
+app.put("/api/house_plans/:id", upload.single("img"), (req, res) => {
+  let house = housePlans.find((h) => h._id === parseInt(req.params.id));
+
+  if (!house) res.status(400).send("House with given id was not found");
+
+  const result = validateHouse(req.body);
+
+  if (result.error) {
+    res.status(400).send(result.error.details[0].message);
+    return;
+  }
+
+  house.name = req.body.name;
+  house.description = req.body.description;
+  house.size = req.body.size;
+  house.bathrooms = req.body.bathrooms;
+  house.bedrooms = req.body.bedrooms;
+
+  if (req.file) {
+    house.main_image = req.file.filename;
+  }
+
+  res.status(200).send(house);
+});
+
+app.delete("/api/house_plans/:id", (req, res) => {
+  const house = housePlans.find((h) => h._id === parseInt(req.params.id));
+
+  if (!house) {
+    res.status(404).send("The house with the given id was not found");
+  }
+
+  const index = housePlans.indexOf(house);
+  housePlans.splice(index, 1);
+  res.status(200).send(house);
+});
+
+const validateHouse = (house) => {
   const schema = Joi.object({
-    name:Joi.string().min(3).required(),
-    size:Joi.number().required(),
-    bedrooms:Joi.number().required(),
-    bathrooms:Joi.number().required()
+    name: Joi.string().min(3).required(),
+    size: Joi.number().required(),
+    bedrooms: Joi.number().required(),
+    bathrooms: Joi.number().required(),
   });
 
   return schema.validate(house);
